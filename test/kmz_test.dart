@@ -9,9 +9,9 @@ import 'package:test/test.dart';
 void main() async {
   group('kmz', () {
     String kmzDataDir = 'test/_data/kmz';
-    List<String> kmzTestFiles = ['test.kmz'];
+    List<String> kmzTestFiles = ['test.kmz', 'test2.kmz'];
 
-    test('Decode and encode a kmz file', () async {
+    test('decode and encode file', () async {
       final archive = ZipDecoder().decodeStream(InputMemoryStream(
           File('$kmzDataDir/${kmzTestFiles[0]}').readAsBytesSync()));
 
@@ -22,8 +22,11 @@ void main() async {
       expect(archive.length, archive2.length);
     });
 
-    test('Extract and recreate same kmz file', () async {
+    test('extract and recreate same file', () async {
       final kmzOutDir = '$kmzDataDir/_out';
+      if (await Directory('$kmzOutDir').exists()) {
+        await Directory('$kmzOutDir').delete(recursive: true);
+      }
 
       for (int i = 0; i < kmzTestFiles.length; i++) {
         final kmzOutFile = '$kmzOutDir/${kmzTestFiles[i]}';
@@ -46,10 +49,21 @@ void main() async {
             await Directory('$kmzTestDir/' + filename).create(recursive: true);
           }
         }
+
         // zip extracted directory
         var encoder = ZipFileEncoder();
         await encoder.zipDirectory(Directory('$kmzTestDir'),
             filename: '$kmzOutFile');
+
+        // decode the archive we just encoded
+        final outBytes = File('$kmzOutFile').readAsBytesSync();
+        final archive2 = ZipDecoder().decodeBytes(outBytes, verify: true);
+
+        expect(archive2.length, equals(archive.length));
+        for (var i = 0; i < archive2.length; ++i) {
+          expect(archive2[i].name, equals(archive[i].name));
+          expect(archive2[i].size, equals(archive[i].size));
+        }
 
         print(
             'Create a map at: https://www.google.com/maps/d/ and import $kmzOutFile.');

@@ -5,3 +5,7 @@ _out/
 pubspec.lock
 
 /build
+
+.vscode/
+.fvm/
+.fvmrc
